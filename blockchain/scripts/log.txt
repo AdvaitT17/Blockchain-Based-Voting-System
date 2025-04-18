@@ -1,0 +1,2 @@
+Installed chaincodes on peer:
+Package ID: voting_1.0:f1dba7f618bae3da86583c0b369a52a389d63ab5ee0943f38b35908c75753ce9, Label: voting_1.0

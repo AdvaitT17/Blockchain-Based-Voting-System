@@ -1,0 +1,19 @@
+{
+  "name": "blockchain-voting-system-tests",
+  "version": "1.0.0",
+  "description": "Test suite for Blockchain-Based Voting System",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha integration/**/*.test.js api/**/*.js",
+    "test:integration": "mocha integration/**/*.test.js",
+    "test:api": "mocha api/**/*.js",
+    "test:with-cleanup": "TEST_CLEANUP=true mocha integration/**/*.test.js api/**/*.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "chai": "^4.3.6",
+    "mocha": "^10.0.0"
+  }
+}

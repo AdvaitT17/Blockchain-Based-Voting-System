@@ -1,0 +1,66 @@
+{
+  "elections": [
+    {
+      "electionId": "EL001",
+      "name": "General Election 2025",
+      "startDate": "2025-04-01",
+      "endDate": "2025-05-15",
+      "status": "ACTIVE",
+      "constituencies": [
+        "Mumbai North",
+        "Mumbai South",
+        "Pune",
+        "Nagpur"
+      ],
+      "candidates": [
+        {
+          "candidateId": "C001",
+          "name": "Candidate 1",
+          "party": "Party A",
+          "constituencyId": "Mumbai North"
+        },
+        {
+          "candidateId": "C002",
+          "name": "Candidate 2",
+          "party": "Party B",
+          "constituencyId": "Mumbai North"
+        },
+        {
+          "candidateId": "C003",
+          "name": "Candidate 3",
+          "party": "Party A",
+          "constituencyId": "Mumbai South"
+        },
+        {
+          "candidateId": "C004",
+          "name": "Candidate 4",
+          "party": "Party B",
+          "constituencyId": "Mumbai South"
+        }
+      ]
+    }
+  ],
+  "voters": {
+    "TEST423456": {
+      "voterId": "TEST423456",
+      "name": "Voter",
+      "aadharId": "423456789012",
+      "votingDistrict": "Mumbai South",
+      "constituencyId": "Mumbai South",
+      "registrationDate": "2025-04-18T08:46:14.136Z",
+      "status": "REGISTERED",
+      "votedElections": [
+        "EL001"
+      ],
+      "hasVoted": false
+    }
+  },
+  "votes": {
+    "VOTE_1744966010141_TEST423456_EL001": {
+      "voteId": "VOTE_1744966010141_TEST423456_EL001",
+      "electionId": "EL001",
+      "candidateId": "C003",
+      "timestamp": "2025-04-18T08:46:50.141Z"
+    }
+  }
+}
