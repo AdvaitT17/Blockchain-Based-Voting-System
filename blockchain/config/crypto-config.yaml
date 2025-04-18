@@ -1,0 +1,28 @@
+OrdererOrgs:
+  - Name: ElectionCommission
+    Domain: election-commission.gov.in
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
+        CommonName: orderer.election-commission.gov.in
+      - Hostname: orderer2
+        CommonName: orderer2.election-commission.gov.in
+      - Hostname: orderer3
+        CommonName: orderer3.election-commission.gov.in
+
+PeerOrgs:
+  - Name: StateElectionOffice
+    Domain: state.gov.in
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 1
+  
+  - Name: DistrictElectionOffice
+    Domain: district.gov.in
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 1

@@ -1,0 +1,25 @@
+# Node modules
+node_modules
+# Logs and temp
+logs/
+logs
+temp
+# Environment files
+.env
+# MacOS
+.DS_Store
+# Fabric crypto artifacts (generated)
+/blockchain/crypto-config/
+/blockchain/system-genesis-block/
+/blockchain/channel-artifacts/
+/blockchain/organizations/
+/blockchain/test-network/
+# Backend and frontend build outputs
+/backend/dist/
+/frontend/build/
+# Chaincode build outputs
+**/chaincode/**/build/
+**/chaincode/**/node_modules/
+# Ignore npm lock if you prefer using yarn
+npm-debug.log*
+yarn-error.log*

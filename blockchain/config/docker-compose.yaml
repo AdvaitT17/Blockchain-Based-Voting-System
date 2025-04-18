@@ -1,0 +1,296 @@
+version: '2.4'
+
+volumes:
+  orderer.election-commission.gov.in:
+  orderer2.election-commission.gov.in:
+  orderer3.election-commission.gov.in:
+  peer0.state.gov.in:
+  peer1.state.gov.in:
+  peer0.district.gov.in:
+  peer1.district.gov.in:
+
+networks:
+  voting_network:
+    name: voting_network
+    driver: bridge
+
+services:
+  ca.election-commission.gov.in:
+    image: hyperledger/fabric-ca:${CA_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.election-commission.gov.in
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.election-commission.gov.in-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/ca.election-commission.gov.in-key.pem
+      - FABRIC_CA_SERVER_TLS_ENABLED=false
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/ordererOrganizations/election-commission.gov.in/ca:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca.election-commission.gov.in
+    networks:
+      - voting_network
+
+  ca.state.gov.in:
+    image: hyperledger/fabric-ca:${CA_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.state.gov.in
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.state.gov.in-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/ca.state.gov.in-key.pem
+      - FABRIC_CA_SERVER_TLS_ENABLED=false
+    ports:
+      - "8054:7054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/peerOrganizations/state.gov.in/ca:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca.state.gov.in
+    networks:
+      - voting_network
+
+  ca.district.gov.in:
+    image: hyperledger/fabric-ca:${CA_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.district.gov.in
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.district.gov.in-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/ca.district.gov.in-key.pem
+      - FABRIC_CA_SERVER_TLS_ENABLED=false
+    ports:
+      - "9054:7054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/peerOrganizations/district.gov.in/ca:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca.district.gov.in
+    networks:
+      - voting_network
+
+  orderer.election-commission.gov.in:
+    container_name: orderer.election-commission.gov.in
+    image: hyperledger/fabric-orderer:${FABRIC_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    extra_hosts:
+      - "orderer.election-commission.gov.in:host-gateway"
+      - "peer0.state.gov.in:host-gateway"
+      - "peer1.state.gov.in:host-gateway"
+      - "peer0.district.gov.in:host-gateway"
+      - "peer1.district.gov.in:host-gateway"
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/orderer.genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=ElectionCommissionMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=false
+      - ORDERER_METRICS_PROVIDER=prometheus
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:8443
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+      - ../system-genesis-block/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+      - ../crypto-config/ordererOrganizations/election-commission.gov.in/orderers/orderer.election-commission.gov.in/msp:/var/hyperledger/orderer/msp
+      - ../crypto-config/ordererOrganizations/election-commission.gov.in/orderers/orderer.election-commission.gov.in/tls/:/var/hyperledger/orderer/tls
+      - orderer.election-commission.gov.in:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+      - 8443:8443
+    networks:
+      - voting_network
+
+  # Removed extra orderer containers as we're using solo orderer configuration
+
+  peer0.state.gov.in:
+    container_name: peer0.state.gov.in
+    image: hyperledger/fabric-peer:${FABRIC_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    extra_hosts:
+      - "orderer.election-commission.gov.in:host-gateway"
+      - "peer1.state.gov.in:host-gateway"
+      - "peer0.district.gov.in:host-gateway"
+      - "peer1.district.gov.in:host-gateway"
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=voting_network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=false
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_ID=peer0.state.gov.in
+      - CORE_PEER_ADDRESS=peer0.state.gov.in:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.state.gov.in:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.state.gov.in:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.state.gov.in:7051
+      - CORE_PEER_LOCALMSPID=StateElectionOfficeMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9444
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../crypto-config/peerOrganizations/state.gov.in/peers/peer0.state.gov.in/msp:/etc/hyperledger/fabric/msp
+      - ../crypto-config/peerOrganizations/state.gov.in/peers/peer0.state.gov.in/tls:/etc/hyperledger/fabric/tls
+      - peer0.state.gov.in:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 7053:7051
+      - 9444:9444
+    networks:
+      - voting_network
+
+  peer1.state.gov.in:
+    container_name: peer1.state.gov.in
+    image: hyperledger/fabric-peer:${FABRIC_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    extra_hosts:
+      - "orderer.election-commission.gov.in:host-gateway"
+      - "peer0.state.gov.in:host-gateway"
+      - "peer0.district.gov.in:host-gateway"
+      - "peer1.district.gov.in:host-gateway"
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=voting_network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=false
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_ID=peer1.state.gov.in
+      - CORE_PEER_ADDRESS=peer1.state.gov.in:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer1.state.gov.in:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.state.gov.in:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.state.gov.in:7051
+      - CORE_PEER_LOCALMSPID=StateElectionOfficeMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9445
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../crypto-config/peerOrganizations/state.gov.in/peers/peer1.state.gov.in/msp:/etc/hyperledger/fabric/msp
+      - ../crypto-config/peerOrganizations/state.gov.in/peers/peer1.state.gov.in/tls:/etc/hyperledger/fabric/tls
+      - peer1.state.gov.in:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 7055:7051
+      - 9445:9445
+    networks:
+      - voting_network
+
+  peer0.district.gov.in:
+    container_name: peer0.district.gov.in
+    image: hyperledger/fabric-peer:${FABRIC_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    extra_hosts:
+      - "orderer.election-commission.gov.in:host-gateway"
+      - "peer0.state.gov.in:host-gateway"
+      - "peer1.state.gov.in:host-gateway"
+      - "peer1.district.gov.in:host-gateway"
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=voting_network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=false
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_ID=peer0.district.gov.in
+      - CORE_PEER_ADDRESS=peer0.district.gov.in:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.district.gov.in:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.district.gov.in:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.district.gov.in:9051
+      - CORE_PEER_LOCALMSPID=DistrictElectionOfficeMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9446
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../crypto-config/peerOrganizations/district.gov.in/peers/peer0.district.gov.in/msp:/etc/hyperledger/fabric/msp
+      - ../crypto-config/peerOrganizations/district.gov.in/peers/peer0.district.gov.in/tls:/etc/hyperledger/fabric/tls
+      - peer0.district.gov.in:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 9051:9051
+      - 9446:9446
+    networks:
+      - voting_network
+
+  peer1.district.gov.in:
+    container_name: peer1.district.gov.in
+    image: hyperledger/fabric-peer:${FABRIC_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    extra_hosts:
+      - "orderer.election-commission.gov.in:host-gateway"
+      - "peer0.state.gov.in:host-gateway"
+      - "peer1.state.gov.in:host-gateway"
+      - "peer0.district.gov.in:host-gateway"
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=voting_network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=false
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_ID=peer1.district.gov.in
+      - CORE_PEER_ADDRESS=peer1.district.gov.in:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer1.district.gov.in:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.district.gov.in:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.district.gov.in:9051
+      - CORE_PEER_LOCALMSPID=DistrictElectionOfficeMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9447
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../crypto-config/peerOrganizations/district.gov.in/peers/peer1.district.gov.in/msp:/etc/hyperledger/fabric/msp
+      - ../crypto-config/peerOrganizations/district.gov.in/peers/peer1.district.gov.in/tls:/etc/hyperledger/fabric/tls
+      - peer1.district.gov.in:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 9052:9051
+      - 9447:9447
+    networks:
+      - voting_network
+
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:${FABRIC_VERSION}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/amd64}
+    tty: true
+    stdin_open: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.state.gov.in:7051
+      - CORE_PEER_LOCALMSPID=StateElectionOfficeMSP
+      - CORE_PEER_TLS_ENABLED=false
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/peerOrganizations/state.gov.in/users/Admin@state.gov.in/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config
+      - ../scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts
+      - ../chaincode:/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode
+      - ../system-genesis-block:/opt/gopath/src/github.com/hyperledger/fabric/peer/system-genesis-block
+      - ../channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+    depends_on:
+      - peer0.state.gov.in
+      - peer0.district.gov.in
+    networks:
+      - voting_network

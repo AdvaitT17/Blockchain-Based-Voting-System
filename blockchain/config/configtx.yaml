@@ -1,0 +1,196 @@
+---
+################################################################################
+#
+#   ORGANIZATIONS
+#
+################################################################################
+Organizations:
+    - &ElectionCommission
+        Name: ElectionCommissionMSP
+        ID: ElectionCommissionMSP
+        MSPDir: ../crypto-config/ordererOrganizations/election-commission.gov.in/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('ElectionCommissionMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('ElectionCommissionMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('ElectionCommissionMSP.admin')"
+        OrdererEndpoints:
+            - orderer.election-commission.gov.in:7050
+            - orderer2.election-commission.gov.in:7050
+            - orderer3.election-commission.gov.in:7050
+
+    - &StateElectionOffice
+        Name: StateElectionOfficeMSP
+        ID: StateElectionOfficeMSP
+        MSPDir: ../crypto-config/peerOrganizations/state.gov.in/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('StateElectionOfficeMSP.admin', 'StateElectionOfficeMSP.peer', 'StateElectionOfficeMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('StateElectionOfficeMSP.admin', 'StateElectionOfficeMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('StateElectionOfficeMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('StateElectionOfficeMSP.peer')"
+        AnchorPeers:
+            - Host: peer0.state.gov.in
+              Port: 7051
+
+    - &DistrictElectionOffice
+        Name: DistrictElectionOfficeMSP
+        ID: DistrictElectionOfficeMSP
+        MSPDir: ../crypto-config/peerOrganizations/district.gov.in/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('DistrictElectionOfficeMSP.admin', 'DistrictElectionOfficeMSP.peer', 'DistrictElectionOfficeMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('DistrictElectionOfficeMSP.admin', 'DistrictElectionOfficeMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('DistrictElectionOfficeMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('DistrictElectionOfficeMSP.peer')"
+        AnchorPeers:
+            - Host: peer0.district.gov.in
+              Port: 9051
+
+################################################################################
+#
+#   CAPABILITIES
+#
+################################################################################
+Capabilities:
+    Channel: &ChannelCapabilities
+        V2_0: true
+    Orderer: &OrdererCapabilities
+        V2_0: true
+    Application: &ApplicationCapabilities
+        V2_0: true
+
+################################################################################
+#
+#   APPLICATION
+#
+################################################################################
+Application: &ApplicationDefaults
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+    Capabilities:
+        <<: *ApplicationCapabilities
+
+################################################################################
+#
+#   ORDERER
+#
+################################################################################
+Orderer: &OrdererDefaults
+    OrdererType: solo
+    Addresses:
+        - orderer.election-commission.gov.in:7050
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 500
+        AbsoluteMaxBytes: 10 MB
+        PreferredMaxBytes: 2 MB
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+################################################################################
+#
+#   CHANNEL
+#
+################################################################################
+Channel: &ChannelDefaults
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+    Capabilities:
+        <<: *ChannelCapabilities
+
+################################################################################
+#
+#   PROFILES
+#
+################################################################################
+Profiles:
+    VotingOrdererGenesis:
+        <<: *ChannelDefaults
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *ElectionCommission
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            VotingConsortium:
+                Organizations:
+                    - *StateElectionOffice
+                    - *DistrictElectionOffice
+
+    VotingChannel:
+        Consortium: VotingConsortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *StateElectionOffice
+                - *DistrictElectionOffice
+            Capabilities:
+                <<: *ApplicationCapabilities
+
+    ConstituencyChannel:
+        Consortium: VotingConsortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *StateElectionOffice
+                - *DistrictElectionOffice
+            Capabilities:
+                <<: *ApplicationCapabilities
